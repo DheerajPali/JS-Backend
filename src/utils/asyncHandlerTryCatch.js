@@ -1,7 +1,7 @@
 //APPROACH 2 - USING TYR-CATCH
 
 //asyncHandler is a high order func. check comment to know more about it.
-const asyncHandler1 = (fn) => async (req, res, next) => {
+const asyncHandler = (fn) => async (req, res, next) => {
     try {
       await fn(req, res, next);
     } catch (error) {
@@ -11,3 +11,5 @@ const asyncHandler1 = (fn) => async (req, res, next) => {
       });
     }
   };
+
+  export{asyncHandler}

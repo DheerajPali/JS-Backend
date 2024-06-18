@@ -3,7 +3,7 @@
 //APPROACH 1 - USING PROMISE
 //asyncHandler is a high order func. check comment to know more about it.
 const asyncHandler = (requestHandler) => {
-  (req, res, next) => {
+  return (req, res, next) => {
     Promise.resolve(requestHandler(req, res, next)).catch((err) => next(err));
   };
 };
