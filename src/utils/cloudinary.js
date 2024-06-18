@@ -32,6 +32,7 @@ const uploadOnCloudinary = async (localFilePath) => {
   } catch (error) {
     // remove the locally saved temperory file as the upload operation got failed.
     console.log("cloudinary :: Error : ", error);
+    //we'll unlink file to remove all corrupted file access.
     fs.unlink(localFilePath);
     return null;
   }
