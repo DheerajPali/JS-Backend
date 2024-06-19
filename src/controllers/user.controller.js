@@ -21,7 +21,7 @@ const registerUser = asyncHandler(async (req, res) => {
 
   //get user details from postman using req.body.
   const { fullName, email, username, password } = req.body;
-  console.log("fullName : ", fullName);
+  console.log("fullname : ", fullName);
   console.log("email : ", email);
   console.log("username : ", username);
   console.log("password : ", password);
@@ -34,12 +34,12 @@ const registerUser = asyncHandler(async (req, res) => {
     throw new ApiError(400, "All fields are required");
   }
   //email validation added by me.
-  if (!email.contains("@")) {
-    throw new ApiError(400, "Enter a valid email");
-  }
+  // if (!email.contains("@")) {
+  //   throw new ApiError(400, "Enter a valid email");
+  // }
 
   //use operators using $ symbol, here we're checking existed user.
-  const existedUser = User.findOne({
+  const existedUser = await User.findOne({
     $or: [{ username }, { email }],
   });
   console.log("existedUser", existedUser);
@@ -51,11 +51,22 @@ const registerUser = asyncHandler(async (req, res) => {
   console.log("From multer *req.files* = ", req.files);
   //multer gives us "req.files" access...
 
-  const avatarLocalPath = req.files?.avatar[0]?.path;
-  console.log("avatarLocalPath : ", avatarLocalPath);
-
-  const coverImageLocalPath = req.files?.coverImage[0]?.path;
-  console.log("coverImageLocalPath : ", coverImageLocalPath);
+  // const avatarLocalPath = req.files?.avatar[0]?.path;
+  
+  //here we were directly creating coverImageLocalPath , which will come undefined if file is not there, field is not mendatory so there's no validation.
+  // const coverImageLocalPath = req.files?.coverImage[0]?.path;
+  
+  //in coverImageLocalPath we don't want to add "undefined" , so we'll create path only when file exists.
+  if(req.files && Array.isArray(req.files.coverImage) && req.files.coverImage.length > 0){
+    var coverImageLocalPath = req.files.coverImage[0].path;
+    console.log("coverImageLocalPath : ", coverImageLocalPath);
+  }
+  
+  //same we'll do for avatar , but not needed beacause we're doing avatar validation in next step.
+  if(req.files && Array.isArray(req.files.avatar) && req.files.avatar.length > 0){
+    var avatarLocalPath = req.files.avatar[0].path;
+    console.log("avatarLocalPath : ", avatarLocalPath);
+  }
 
   if (!avatarLocalPath) {
     throw new ApiError(400, "Avatar is required");
@@ -79,7 +90,8 @@ const registerUser = asyncHandler(async (req, res) => {
     //check if coverImage is not there then make it empty , as it's not a required filed.
     coverImage: coverImage?.url || "",
     email,
-    username: username.toLowercase(),
+    username: username.toLowerCase(),
+    password
   });
 
   //here we're validating wether user is created or not.
@@ -94,7 +106,7 @@ const registerUser = asyncHandler(async (req, res) => {
   }
   console.log("db entry of user : ", user);
 
-  return res.staus(201).json(
+  return res.status(201).json(
     new ApiResponse(200, createdUser, "User registered successfully")
   );
 });

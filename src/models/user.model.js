@@ -1,6 +1,7 @@
 import mongoose, { Schema } from "mongoose";
 
 import jwt from "jsonwebtoken";
+import bcrypt from 'bcrypt'
 
 const userSchema = new Schema(
   {
@@ -20,9 +21,9 @@ const userSchema = new Schema(
       lowercase: true,
       trim: true,
     },
-    fullname: {
+    fullName: {
       type: String,
-      required: [true, "fullname is required"],
+      required: [true, "fullName is required"],
       trim: true,
       index: true,
     },
@@ -30,7 +31,7 @@ const userSchema = new Schema(
       type: String, // cloudinary url
       required: [true, "avatar is required"],
     },
-    coverimage: {
+    coverImage: {
       type: String, //cloudinary url
     },
     watchHistory: [

@@ -28,6 +28,8 @@ const uploadOnCloudinary = async (localFilePath) => {
       "file info : ",
       response
     );
+    //it will delete the uploaded file "Syncronomously" , after successfull uploadition of the file.
+    fs.unlinkSync(localFilePath)
     return response;
   } catch (error) {
     // remove the locally saved temperory file as the upload operation got failed.
