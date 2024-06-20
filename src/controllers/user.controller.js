@@ -7,7 +7,7 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 const registerUser = asyncHandler(async (req, res) => {
   /*Write down steps to register a user , here you'll get to know about logic building.*/
   // get details (data) from frontEnd , postman etc.
-  //galidate data
+  //validate data
   //check user already exist, using email and username or custom fields.
   //check for avatar* and image
   //validate for mendatory file
@@ -27,17 +27,17 @@ const registerUser = asyncHandler(async (req, res) => {
   console.log("password : ", password);
 
   //validation.. you can check one by one also , and can use .some method of js as well.
-
-  if (
+  if (!fullName || ! email || !password || !username ||
     [fullName, email, username, password].some((field) => field?.trim() === " ")
   ) {
     throw new ApiError(400, "All fields are required");
   }
+  
   //email validation added by me.
-  // if (!email.contains("@")) {
-  //   throw new ApiError(400, "Enter a valid email");
-  // }
-
+  if (!email.includes("@")) {
+    throw new ApiError(400, "Enter a valid email");
+  }
+  
   //use operators using $ symbol, here we're checking existed user.
   const existedUser = await User.findOne({
     $or: [{ username }, { email }],
