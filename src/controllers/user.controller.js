@@ -1,7 +1,7 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { User } from "../models/user.model.js";
-import { uploadOnCloudinary } from "../utils/cloudinary.js";
+import { deleteOldImageFromCloudinary, uploadOnCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import jwt from 'jsonwebtoken';
 import { get } from "mongoose";
@@ -350,7 +350,7 @@ const updateAccountDetails = asyncHandler( async(req, res) => {
     throw new ApiError (400 , "All fields are required")
   }
 
-  const user = User.findByIdAndUpdate(
+  const user = await User.findByIdAndUpdate(
     req.user?._id,
     {
       $set : {
@@ -385,6 +385,9 @@ const updateUserAvatar = asyncHandler( async(req,res) => {
   if(!avatar.url) {
     throw new ApiError (500, "Error while uploading avatar")
   }
+  //make sure old image is coming here
+  const oldAvatar = req.user?.avatar?.url;
+  console.log("oldAvatar ", oldAvatar);
 
   const user = await User.findByIdAndUpdate(
     req.user?._id,
@@ -395,6 +398,11 @@ const updateUserAvatar = asyncHandler( async(req,res) => {
     },
     {new : true}
   ).select("-password")
+
+  //check wether avatar image changed or not , if yes then delete old image from cloudinary.
+  if( oldAvatar && user.avatar.url !== oldAvatar) {
+    await deleteOldImageFromCloudinary(oldAvatar);
+  }
 
   return res
    .status(200)
@@ -407,11 +415,14 @@ const updateUserCoverImage = asyncHandler( async(req,res) => {
   if(!coverImagePath) {
     throw new ApiError(400 , "Cover image file is missing");
   }
-  
   const coverImage = uploadOnCloudinary(coverImagePath)
   if(!coverImage.url) {
     throw new ApiError(500, "Error while uploading cover image");
   }
+  
+  //save the url of old image to delete it after update process.
+   const oldCoverImage = req.user?.coverImage?.url;
+   console.log("oldCoverImage ", oldCoverImage);
 
   const user = await User.findByIdAndUpdate(
     req.user?._id,
@@ -423,6 +434,10 @@ const updateUserCoverImage = asyncHandler( async(req,res) => {
     {new : true}
   ).select("-password");
 
+  //check wether image is updated or not , delete old image from cloudinary if updated.
+  if(oldCoverImage && user.coverImage.url !== oldCoverImage) {
+    await deleteOldImageFromCloudinary(oldCoverImage);
+  }
   return res
   .status(200)
   .json(new ApiResponse(200, user , "Cover Image updated successfully"));
