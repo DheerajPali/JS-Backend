@@ -299,6 +299,7 @@ const refreshAccessToken = asyncHandler( async (req, res) => {
 
 const changeCurrentPassword = asyncHandler( async (req, res) => {
   const {oldPassword , newPassword, confirmPassword} = req.body;
+  console.log("oldPassword : ",oldPassword, "\n newPassword" , newPassword , "\n confirmPassword", confirmPassword);
 
   if(newPassword === oldPassword){
     throw new ApiError(400, "You can not save new password same as old password");
@@ -332,11 +333,12 @@ const changeCurrentPassword = asyncHandler( async (req, res) => {
 
 
 const getCurrentUser = asyncHandler(async (req, res) => {
+  console.log("currentUser",req.user);
   return res.status(200)
   .json(
     new ApiResponse(
       200, 
-      await req.user,  //await is added by me only
+      req.user,  //await is added by me only
       "CurrentUser fetched successfully")
   )
 })
@@ -344,10 +346,20 @@ const getCurrentUser = asyncHandler(async (req, res) => {
 //here we're updating "Text-Based" data
 const updateAccountDetails = asyncHandler( async(req, res) => {
   
-  const {fullName , email } = req.body;
+  const {fullName ,username, email } = req.body;
 
   if(!fullName || !email) {
     throw new ApiError (400 , "All fields are required")
+  }
+
+  //here we're checking , user has updated any info or not? 
+  //added by myself, after thought if user still click on update. 
+  const currentUser = await User.findById(req.user?._id)
+  if(
+    currentUser.fullName === fullName 
+    && currentUser.email === email 
+    && currentUser.username === username) {
+      throw new ApiError(400 , "Please update atleast one field");
   }
 
   const user = await User.findByIdAndUpdate(
@@ -362,6 +374,8 @@ const updateAccountDetails = asyncHandler( async(req, res) => {
     },
     {new : true}
   ).select("-password")
+
+  console.log("updated user : ", user)
 
   return res
   .status(200)
