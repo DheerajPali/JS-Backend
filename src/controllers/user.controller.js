@@ -527,6 +527,73 @@ const getUserChannelProfile = asyncHandler( async(req, res) => {
   )
 })
 
+const getWatchHistory = asyncHandler(async (req, res) => {
+
+  /* INTERVIEW QUESTION..
+  
+  req.user._id   will return you a string
+  mongoose convert it automatically into int inside it's methods.
+  
+  you can get your id in the form of int by using mongoose. 
+  ex ; mongoose.Types.ObjectId(req.user._id),
+
+  */
+  const user = await User.aggregate([
+    {
+      $match : {
+        _id : new mongoose.Types.ObjectId(req.user._id)
+      }
+    },
+    {
+      $lookup : {
+        from : "videos",
+        localField : "",
+        foreignField : "",
+        as : "watchHistory",
+        //here we're creating sub pipeline, you can create it inside any method
+       //here I'm trying to find owner in users model
+        pipeline : [
+          {
+            $lookup : {
+              from : "users",
+              localField : "owner",
+              foreignField : "_id",
+              as : "owner", 
+              //here I don't want to show all details of user,so using $project
+              pipeline : [
+                {
+                  $project : {
+                    fullName : 1,
+                    username : 1, 
+                    email : 1,
+                    avatar : 1,
+                    coverImage : 1
+                  }
+                }
+              ]
+            }
+          },
+
+          //here I'm getting 1st index, since all details is inside owner field,
+          {
+            $addFields : {
+              owner : {
+                $first : "$owner"
+              }
+            }
+          }
+        ]
+      }
+    }
+  ])
+
+  return res.status(200)
+  .json(new ApiResponse (
+    200,
+    user[0].watchHistory,
+    "Watch history fetched successfully"
+  ))
+})
 
 
 export { 
@@ -539,6 +606,7 @@ export {
   updateAccountDetails,
   updateUserAvatar,
   updateUserCoverImage,
-  getUserChannelProfile
+  getUserChannelProfile,
+  getWatchHistory
 };
 
