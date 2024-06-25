@@ -4,7 +4,7 @@ import { User } from "../models/user.model.js";
 import { deleteOldImageFromCloudinary, uploadOnCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import jwt from 'jsonwebtoken';
-import { get } from "mongoose";
+import mongoose from "mongoose";
 
 //here we're creating seprate methods to genereate access and refresh tokens.
 const generateAccessAndRefreshTokens = async (userId) => {
@@ -443,6 +443,92 @@ const updateUserCoverImage = asyncHandler( async(req,res) => {
   .json(new ApiResponse(200, user , "Cover Image updated successfully"));
 })
 
+const getUserChannelProfile = asyncHandler( async(req, res) => {
+  const {username} = req.params;
+
+  if(!username?.trim()) {
+    throw new ApiError(400, "username is missing");
+  }
+
+  const channel = await User.aggregate([
+    //how many docs are here related to our username
+    {
+      $match : {
+        username : username?.toLowerCase()
+      },
+    },
+    //how many people has subscribed you  //pipeline 1
+    {
+      $lookup : {
+        from : "subscriptions", //remeber how your model name will store in mongodb
+        localField : "_id",
+        foreignField : "channel",
+        as : "subscribers"
+      }
+    },
+    //how many channels subscribed by you   //pipeline 2
+    {
+      $lookup : {
+        from : "subscriptions",
+        localField : "_id",
+        foreignField : "subscriber",
+        //here Hitesh sir gave name subscribedTo 
+        as :"subscribedChannels"
+      }
+    },
+    {
+      //here we're adding external(additional) fields  //pipeline 3
+      $addFields : {
+        //get count on the basis of count of fields using "$size : $fieldName"
+        subscriberCount : {
+            $size : "$subscribers"
+        },
+        subscribedChannelsCount : {
+          $size : "$subscribedChannels"
+        },
+        //give flag wether this channel is subscribed or not? check condition , check in subscribers model in subscriber field.
+        //use $in to find a value inside array or object. use if then else.
+        isSubscribed : {
+          $cond : {
+            if : {$in : [req.user?._id, "$subscribers.subscriber"]},
+            then : true,
+            else : false
+          }
+        }
+      }
+    },
+
+    //projects says I won't give you all fields, I'll give you selected fields , now give me fields name    //pipeline 4
+    {
+      $project : {
+        fullName : 1,
+        email: 1,
+        username : 1,
+        avatar : 1,
+        coverImage : 1,
+        subscriberCount: 1,
+        subscribedChannelsCount : 1,
+        isSubscribed : 1,
+        createdAt : 1,
+      }
+    }
+  ]);
+
+  console.log("Channel after aggregation ",channel);
+
+  if(!channel?.length) {
+    throw new ApiError(404, "Channel does not exist");
+  }
+
+  return res
+  .status(200)
+  .json(
+    new ApiResponse (200, channel[0], "User channel fetched successfully")
+  )
+})
+
+
+
 export { 
   registerUser , 
   loginUser , 
@@ -452,6 +538,7 @@ export {
   getCurrentUser,
   updateAccountDetails,
   updateUserAvatar,
-  updateUserCoverImage
+  updateUserCoverImage,
+  getUserChannelProfile
 };
 
