@@ -348,7 +348,7 @@ const updateAccountDetails = asyncHandler( async(req, res) => {
   
   const {fullName ,username, email } = req.body;
 
-  if(!fullName || !email) {
+  if(!fullName || !email || !username) {
     throw new ApiError (400 , "All fields are required")
   }
 
@@ -400,7 +400,7 @@ const updateUserAvatar = asyncHandler( async(req,res) => {
     throw new ApiError (500, "Error while uploading avatar")
   }
   //make sure old image is coming here
-  const oldAvatar = req.user?.avatar?.url;
+  const oldAvatar = req.user?.avatar;
   console.log("oldAvatar ", oldAvatar);
 
   const user = await User.findByIdAndUpdate(
@@ -414,7 +414,8 @@ const updateUserAvatar = asyncHandler( async(req,res) => {
   ).select("-password")
 
   //check wether avatar image changed or not , if yes then delete old image from cloudinary.
-  if( oldAvatar && user.avatar.url !== oldAvatar) {
+  if(oldAvatar) {
+    console.log("oldAvatar : ", oldAvatar);
     await deleteOldImageFromCloudinary(oldAvatar);
   }
 
@@ -429,13 +430,13 @@ const updateUserCoverImage = asyncHandler( async(req,res) => {
   if(!coverImagePath) {
     throw new ApiError(400 , "Cover image file is missing");
   }
-  const coverImage = uploadOnCloudinary(coverImagePath)
+  const coverImage = await uploadOnCloudinary(coverImagePath)
   if(!coverImage.url) {
     throw new ApiError(500, "Error while uploading cover image");
   }
   
   //save the url of old image to delete it after update process.
-   const oldCoverImage = req.user?.coverImage?.url;
+   const oldCoverImage = req.user?.coverImage;
    console.log("oldCoverImage ", oldCoverImage);
 
   const user = await User.findByIdAndUpdate(
@@ -449,7 +450,7 @@ const updateUserCoverImage = asyncHandler( async(req,res) => {
   ).select("-password");
 
   //check wether image is updated or not , delete old image from cloudinary if updated.
-  if(oldCoverImage && user.coverImage.url !== oldCoverImage) {
+  if(oldCoverImage) {
     await deleteOldImageFromCloudinary(oldCoverImage);
   }
   return res
