@@ -229,6 +229,7 @@ const logoutUser = asyncHandler(async(req, res) => {
     req.user._id,
     {
       $set : {
+        //make it null , or use $unset operator. if facing any error in logout.
         refreshToken : undefined
       }
     },
@@ -243,7 +244,8 @@ const logoutUser = asyncHandler(async(req, res) => {
     secure : true
   }
 
-  //check the syntax of .clearCookie() method
+  //here we're removing cookie from our response, just check login response , there're cookies , but in logout you won't get it.
+  //check the syntax of .clearCookie() method, ++ syntax tested ,,,
   return res.status(200)
   .clearCookie("accessToken",options)
   .clearCookie("refreshToken",options)
